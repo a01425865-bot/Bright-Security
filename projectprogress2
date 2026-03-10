@@ -1,0 +1,1682 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Bright Security - Community Safety App</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+        }
+<script>
+if ('serviceWorker' in navigator) {
+navigator.serviceWorker.register('/service-worker.js')
+.then(function(registration) {
+console.log('Service Worker registered with scope:', registration.scope);
+})
+.catch(function(error) {
+console.log('Service Worker registration failed:', error);
+});
+}
+</script>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background: #F8FAFC;
+            overflow: hidden;
+            height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .app-container {
+            width: 100%;
+            max-width: 390px;
+            height: 844px;
+            background: #F8FAFC;
+            border-radius: 40px;
+            overflow: hidden;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3), 0 0 0 1px rgba(0,0,0,0.1);
+            display: flex;
+            flex-direction: column;
+            position: relative;
+        }
+
+        /* Status Bar */
+        .status-bar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 14px 24px 10px;
+            background: linear-gradient(180deg, #fff 0%, rgba(255,255,255,0.95) 100%);
+            border-bottom: 1px solid #E2E8F0;
+            z-index: 100;
+        }
+
+        .status-time {
+            font-size: 15px;
+            font-weight: 600;
+            color: #1E293B;
+        }
+
+        .status-indicators {
+            display: flex;
+            gap: 6px;
+            align-items: center;
+        }
+
+        .status-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: #10B981;
+            box-shadow: 0 0 8px rgba(16,185,129,0.5);
+        }
+
+        .status-label {
+            font-size: 11px;
+            color: #64748B;
+            font-weight: 600;
+        }
+
+        /* Header */
+        .app-header {
+            padding: 16px 24px;
+            background: #fff;
+            border-bottom: 1px solid #E2E8F0;
+        }
+
+        .header-top {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 8px;
+        }
+
+        .app-icon {
+            width: 48px;
+            height: 48px;
+            border-radius: 14px;
+            background: linear-gradient(135deg, #3B82F6 0%, #2563EB 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+        }
+
+        .app-title {
+            flex: 1;
+        }
+
+        .app-title h1 {
+            font-size: 22px;
+            font-weight: 700;
+            color: #0F172A;
+            letter-spacing: -0.5px;
+            margin-bottom: 2px;
+        }
+
+        .app-subtitle {
+            font-size: 13px;
+            color: #64748B;
+            font-weight: 500;
+        }
+
+        .header-info {
+            display: flex;
+            gap: 8px;
+            margin-top: 12px;
+        }
+
+        .info-badge {
+            flex: 1;
+            padding: 8px 12px;
+            background: #F1F5F9;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 12px;
+            color: #475569;
+            font-weight: 600;
+        }
+
+        .info-badge.alert {
+            background: #FEF3C7;
+            color: #92400E;
+            flex: none;
+        }
+
+        /* Main Content */
+        .main-content {
+            flex: 1;
+            overflow-y: auto;
+            overflow-x: hidden;
+        }
+
+        .screen {
+            display: none;
+            height: 100%;
+            overflow-y: auto;
+        }
+
+        .screen.active {
+            display: block;
+        }
+
+        /* Map Screen */
+        .map-container {
+            height: 100%;
+            position: relative;
+            background: #E0E7ED;
+        }
+
+        .map-svg {
+            width: 100%;
+            height: 100%;
+        }
+
+        .marker-tooltip {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: #fff;
+            border-radius: 16px;
+            padding: 16px 20px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.15), 0 0 0 1px rgba(0,0,0,0.05);
+            min-width: 260px;
+            max-width: 300px;
+            z-index: 10;
+            display: none;
+        }
+
+        .marker-tooltip.active {
+            display: block;
+            animation: fadeIn 0.2s ease;
+        }
+
+        .tooltip-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: start;
+            margin-bottom: 10px;
+        }
+
+        .tooltip-content {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .tooltip-icon {
+            font-size: 20px;
+        }
+
+        .tooltip-text h4 {
+            font-size: 14px;
+            font-weight: 700;
+            color: #0F172A;
+            margin-bottom: 2px;
+        }
+
+        .tooltip-text p {
+            font-size: 11px;
+            color: #64748B;
+        }
+
+        .close-btn {
+            background: none;
+            border: none;
+            cursor: pointer;
+            padding: 4px;
+            color: #94A3B8;
+            font-size: 16px;
+            line-height: 1;
+        }
+
+        .tooltip-status {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            padding: 6px 10px;
+            background: #F8FAFC;
+            border-radius: 8px;
+            font-size: 11px;
+            font-weight: 600;
+        }
+
+        .status-indicator {
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+        }
+
+        .map-legend {
+            position: absolute;
+            bottom: 20px;
+            left: 20px;
+            background: rgba(255,255,255,0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 12px;
+            padding: 12px 14px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+        }
+
+        .legend-title {
+            font-size: 11px;
+            font-weight: 700;
+            color: #475569;
+            margin-bottom: 8px;
+        }
+
+        .legend-items {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .legend-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+        }
+
+        .legend-label {
+            font-size: 10px;
+            color: #64748B;
+        }
+
+        .quick-report-btn {
+            position: absolute;
+            bottom: 20px;
+            right: 20px;
+            width: 56px;
+            height: 56px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #F59E0B 0%, #D97706 100%);
+            border: none;
+            box-shadow: 0 8px 24px rgba(245,158,11,0.4), 0 0 0 4px rgba(245,158,11,0.1);
+            cursor: pointer;
+            font-size: 24px;
+            color: #fff;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: transform 0.2s;
+        }
+
+        .quick-report-btn:active {
+            transform: scale(0.95);
+        }
+
+        /* Report Screen */
+        .report-content {
+            padding: 20px 24px;
+        }
+
+        .screen-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 24px;
+        }
+
+        .screen-title {
+            font-size: 20px;
+            font-weight: 700;
+            color: #0F172A;
+        }
+
+        .btn-primary {
+            padding: 10px 16px;
+            border-radius: 10px;
+            background: linear-gradient(135deg, #3B82F6 0%, #2563EB 100%);
+            border: none;
+            color: #fff;
+            font-size: 13px;
+            font-weight: 700;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        /* Form */
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-label {
+            display: block;
+            font-size: 13px;
+            font-weight: 600;
+            color: #475569;
+            margin-bottom: 10px;
+        }
+
+        .form-label.required::after {
+            content: ' *';
+            color: #EF4444;
+        }
+
+        .issue-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 10px;
+        }
+
+        .issue-type {
+            padding: 14px 12px;
+            border-radius: 12px;
+            background: #F8FAFC;
+            border: 2px solid #E2E8F0;
+            cursor: pointer;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 6px;
+            transition: all 0.2s;
+        }
+
+        .issue-type:hover {
+            background: #F1F5F9;
+        }
+
+        .issue-type.selected {
+            border-color: #F59E0B;
+            background: rgba(245,158,11,0.1);
+        }
+
+        .issue-icon {
+            font-size: 24px;
+        }
+
+        .issue-label {
+            font-size: 11px;
+            font-weight: 600;
+            color: #64748B;
+        }
+
+        .issue-type.selected .issue-label {
+            color: #F59E0B;
+        }
+
+        textarea, input {
+            width: 100%;
+            padding: 12px 14px;
+            border-radius: 12px;
+            border: 2px solid #E2E8F0;
+            font-size: 14px;
+            color: #0F172A;
+            font-family: inherit;
+            resize: none;
+        }
+
+        textarea:focus, input:focus {
+            outline: none;
+            border-color: #3B82F6;
+        }
+
+        textarea {
+            min-height: 100px;
+        }
+
+        .location-display {
+            padding: 12px 14px;
+            border-radius: 12px;
+            border: 2px solid #E2E8F0;
+            background: #F8FAFC;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .location-icon {
+            color: #3B82F6;
+            font-size: 18px;
+        }
+
+        .location-text {
+            flex: 1;
+            font-size: 14px;
+            color: #475569;
+        }
+
+        .auto-detected {
+            font-size: 11px;
+            color: #10B981;
+            font-weight: 600;
+        }
+
+        .photo-upload {
+            width: 100%;
+            padding: 16px;
+            border-radius: 12px;
+            border: 2px dashed #CBD5E1;
+            background: #F8FAFC;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            transition: all 0.2s;
+        }
+
+        .photo-upload:hover {
+            background: #F1F5F9;
+        }
+
+        .photo-upload.has-photo {
+            border-color: #10B981;
+            border-style: solid;
+            background: #ECFDF5;
+        }
+
+        .photo-icon {
+            font-size: 20px;
+        }
+
+        .photo-text {
+            font-size: 14px;
+            font-weight: 600;
+            color: #64748B;
+        }
+
+        .photo-upload.has-photo .photo-text {
+            color: #10B981;
+        }
+
+        .btn-submit {
+            width: 100%;
+            padding: 16px;
+            border-radius: 14px;
+            background: linear-gradient(135deg, #3B82F6 0%, #2563EB 100%);
+            border: none;
+            color: #fff;
+            font-size: 15px;
+            font-weight: 700;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            box-shadow: 0 4px 16px rgba(59,130,246,0.3);
+            transition: transform 0.2s;
+        }
+
+        .btn-submit:disabled {
+            background: #CBD5E1;
+            box-shadow: none;
+            cursor: not-allowed;
+        }
+
+        .btn-submit:active:not(:disabled) {
+            transform: scale(0.98);
+        }
+
+        /* Success Message */
+        .success-message {
+            text-align: center;
+            padding: 60px 20px;
+            display: none;
+        }
+
+        .success-message.active {
+            display: block;
+            animation: fadeIn 0.3s ease;
+        }
+
+        .success-icon {
+            font-size: 64px;
+            margin-bottom: 16px;
+        }
+
+        .success-title {
+            font-size: 20px;
+            font-weight: 700;
+            color: #0F172A;
+            margin-bottom: 8px;
+        }
+
+        .success-text {
+            font-size: 14px;
+            color: #64748B;
+        }
+
+        /* Report List */
+        .reports-list {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .report-card {
+            padding: 16px;
+            border-radius: 14px;
+            background: #fff;
+            border: 1px solid #E2E8F0;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .report-card:hover {
+            box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+        }
+
+        .report-card-header {
+            display: flex;
+            align-items: start;
+            gap: 12px;
+            margin-bottom: 10px;
+        }
+
+        .report-card-icon {
+            font-size: 24px;
+        }
+
+        .report-card-content {
+            flex: 1;
+        }
+
+        .report-card-title {
+            font-size: 15px;
+            font-weight: 700;
+            color: #0F172A;
+            margin-bottom: 4px;
+        }
+
+        .report-card-location {
+            font-size: 12px;
+            color: #64748B;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .report-card-footer {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .report-status-badge {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            padding: 4px 10px;
+            background: #F8FAFC;
+            border-radius: 6px;
+            font-size: 11px;
+            font-weight: 600;
+        }
+
+        .report-time {
+            font-size: 11px;
+            color: #94A3B8;
+        }
+
+        /* Emergency Screen */
+        .emergency-warning {
+            background: linear-gradient(135deg, #FEE2E2 0%, #FECACA 100%);
+            padding: 20px;
+            border-radius: 16px;
+            margin-bottom: 24px;
+            border: 2px solid #FCA5A5;
+        }
+
+        .warning-header {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 8px;
+        }
+
+        .warning-icon {
+            font-size: 24px;
+        }
+
+        .warning-title {
+            font-size: 18px;
+            font-weight: 700;
+            color: #991B1B;
+        }
+
+        .warning-text {
+            font-size: 13px;
+            color: #7F1D1D;
+            line-height: 1.5;
+        }
+
+        .emergency-grid {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 12px;
+        }
+
+        .emergency-btn {
+            padding: 20px;
+            border-radius: 16px;
+            background: #fff;
+            border: 2px solid rgba(0,0,0,0.1);
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            transition: all 0.2s;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+        }
+
+        .emergency-btn:active {
+            transform: scale(0.98);
+        }
+
+        .emergency-icon-box {
+            width: 56px;
+            height: 56px;
+            border-radius: 14px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 28px;
+        }
+
+        .emergency-info {
+            flex: 1;
+            text-align: left;
+        }
+
+        .emergency-name {
+            font-size: 16px;
+            font-weight: 700;
+            color: #0F172A;
+            margin-bottom: 2px;
+        }
+
+        .emergency-desc {
+            font-size: 12px;
+            color: #64748B;
+            margin-bottom: 4px;
+        }
+
+        .emergency-number {
+            font-size: 18px;
+            font-weight: 800;
+        }
+
+        /* Calling Screen */
+        .calling-screen {
+            text-align: center;
+            padding: 60px 20px;
+            display: none;
+        }
+
+        .calling-screen.active {
+            display: block;
+            animation: fadeIn 0.3s ease;
+        }
+
+        .calling-icon {
+            font-size: 72px;
+            margin-bottom: 16px;
+        }
+
+        .calling-title {
+            font-size: 22px;
+            font-weight: 700;
+            color: #0F172A;
+            margin-bottom: 8px;
+        }
+
+        .calling-number {
+            font-size: 28px;
+            font-weight: 800;
+            margin: 4px 0 16px;
+        }
+
+        .calling-desc {
+            font-size: 13px;
+            color: #64748B;
+            margin-bottom: 24px;
+        }
+
+        .btn-cancel {
+            padding: 12px 32px;
+            border-radius: 12px;
+            background: #FEE2E2;
+            border: 2px solid #EF4444;
+            color: #DC2626;
+            font-size: 14px;
+            font-weight: 700;
+            cursor: pointer;
+        }
+
+        .emergency-note {
+            margin-top: 24px;
+            padding: 16px;
+            background: #F1F5F9;
+            border-radius: 12px;
+            font-size: 12px;
+            color: #475569;
+            line-height: 1.6;
+        }
+
+        /* Profile Screen */
+        .profile-header {
+            text-align: center;
+            padding: 32px 20px;
+            background: #fff;
+            border-radius: 16px;
+            margin-bottom: 24px;
+            border: 1px solid #E2E8F0;
+        }
+
+        .profile-avatar {
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #3B82F6 0%, #2563EB 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 16px;
+            font-size: 36px;
+        }
+
+        .profile-name {
+            font-size: 20px;
+            font-weight: 700;
+            color: #0F172A;
+            margin-bottom: 6px;
+        }
+
+        .profile-since {
+            font-size: 13px;
+            color: #64748B;
+        }
+
+        .activity-section {
+            background: #fff;
+            border-radius: 16px;
+            padding: 20px;
+            border: 1px solid #E2E8F0;
+            margin-bottom: 20px;
+        }
+
+        .section-title {
+            font-size: 14px;
+            font-weight: 700;
+            color: #475569;
+            margin-bottom: 16px;
+        }
+
+        .activity-stats {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .stat-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px;
+            background: #F8FAFC;
+            border-radius: 10px;
+        }
+
+        .stat-left {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .stat-icon {
+            font-size: 20px;
+        }
+
+        .stat-label {
+            font-size: 13px;
+            color: #475569;
+            font-weight: 600;
+        }
+
+        .stat-value {
+            font-size: 16px;
+            font-weight: 700;
+            color: #0F172A;
+        }
+
+        .settings-list {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .settings-item {
+            padding: 16px 20px;
+            border-radius: 12px;
+            background: #fff;
+            border: 1px solid #E2E8F0;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            transition: all 0.2s;
+        }
+
+        .settings-item:hover {
+            background: #F8FAFC;
+        }
+
+        .settings-icon {
+            font-size: 20px;
+        }
+
+        .settings-label {
+            flex: 1;
+            font-size: 14px;
+            font-weight: 600;
+            color: #475569;
+        }
+
+        .settings-arrow {
+            color: #CBD5E1;
+            font-size: 18px;
+        }
+
+        /* Bottom Navigation */
+        .bottom-nav {
+            display: flex;
+            background: #fff;
+            border-top: 1px solid #E2E8F0;
+            padding: 8px 12px 20px;
+            box-shadow: 0 -4px 20px rgba(0,0,0,0.05);
+        }
+
+        .nav-item {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 4px;
+            padding: 8px 4px;
+            background: none;
+            border: none;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .nav-icon-wrapper {
+            width: 36px;
+            height: 36px;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s;
+        }
+
+        .nav-item.active .nav-icon-wrapper {
+            background: linear-gradient(135deg, #3B82F6 0%, #2563EB 100%);
+            box-shadow: 0 4px 12px rgba(59,130,246,0.25);
+        }
+
+        .nav-item.active.emergency .nav-icon-wrapper {
+            background: linear-gradient(135deg, #EF4444 0%, #DC2626 100%);
+        }
+
+        .nav-icon {
+            font-size: 20px;
+            color: #94A3B8;
+        }
+
+        .nav-item.active .nav-icon {
+            color: #fff;
+        }
+
+        .nav-label {
+            font-size: 11px;
+            font-weight: 600;
+            color: #94A3B8;
+        }
+
+        .nav-item.active .nav-label {
+            color: #0F172A;
+        }
+
+        /* Animations */
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        @keyframes slideUp {
+            from { transform: translateY(100%); }
+            to { transform: translateY(0); }
+        }
+
+        /* Responsive */
+        @media (max-width: 390px) {
+            .app-container {
+                max-width: 100%;
+                height: 100vh;
+                border-radius: 0;
+            }
+        }
+
+        /* Scrollbar */
+        ::-webkit-scrollbar {
+            width: 0px;
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="app-container">
+        <!-- Status Bar -->
+        <div class="status-bar">
+            <div class="status-time" id="statusTime">9:41</div>
+            <div class="status-indicators">
+                <div class="status-dot"></div>
+                <div class="status-label">ACTIVE</div>
+            </div>
+        </div>
+
+        <!-- App Header -->
+        <div class="app-header">
+            <div class="header-top">
+                <div class="app-icon">🛡️</div>
+                <div class="app-title">
+                    <h1>Bright Security</h1>
+                    <div class="app-subtitle">Community Safety Network</div>
+                </div>
+            </div>
+            <div class="header-info">
+                <div class="info-badge">
+                    <span>📍</span>
+                    <span>Downtown District</span>
+                </div>
+                <div class="info-badge alert">
+                    <span>⚠️</span>
+                    <span id="reportCount">3 Reports</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Main Content -->
+        <div class="main-content">
+            <!-- MAP SCREEN -->
+            <div class="screen active" id="mapScreen">
+                <div class="map-container">
+                    <svg class="map-svg" viewBox="0 0 360 520">
+                        <!-- Background -->
+                        <rect width="360" height="520" fill="#E0E7ED"/>
+                        
+                        <!-- Grid -->
+                        <g id="gridLines" opacity="0.5"></g>
+                        
+                        <!-- Streets -->
+                        <rect x="0" y="100" width="360" height="12" fill="#94A3B8" opacity="0.7"/>
+                        <rect x="0" y="240" width="360" height="12" fill="#94A3B8" opacity="0.7"/>
+                        <rect x="0" y="380" width="360" height="12" fill="#94A3B8" opacity="0.7"/>
+                        <rect x="120" y="0" width="12" height="520" fill="#94A3B8" opacity="0.7"/>
+                        <rect x="240" y="0" width="12" height="520" fill="#94A3B8" opacity="0.7"/>
+                        
+                        <!-- Buildings -->
+                        <rect x="20" y="20" width="80" height="60" rx="4" fill="#fff" stroke="#94A3B8" stroke-width="2"/>
+                        <rect x="140" y="30" width="70" height="50" rx="4" fill="#fff" stroke="#94A3B8" stroke-width="2"/>
+                        <rect x="260" y="25" width="75" height="55" rx="4" fill="#fff" stroke="#94A3B8" stroke-width="2"/>
+                        
+                        <rect x="20" y="130" width="70" height="80" rx="4" fill="#fff" stroke="#94A3B8" stroke-width="2"/>
+                        <rect x="140" y="140" width="80" height="70" rx="4" fill="#fff" stroke="#94A3B8" stroke-width="2"/>
+                        <rect x="260" y="130" width="75" height="85" rx="4" fill="#fff" stroke="#94A3B8" stroke-width="2"/>
+                        
+                        <rect x="20" y="270" width="80" height="75" rx="4" fill="#fff" stroke="#94A3B8" stroke-width="2"/>
+                        <rect x="140" y="275" width="75" height="80" rx="4" fill="#fff" stroke="#94A3B8" stroke-width="2"/>
+                        <rect x="260" y="270" width="70" height="85" rx="4" fill="#fff" stroke="#94A3B8" stroke-width="2"/>
+                        
+                        <!-- Park -->
+                        <ellipse cx="180" cy="450" rx="60" ry="40" fill="#86EFAC" opacity="0.6"/>
+                        <text x="180" y="455" text-anchor="middle" font-size="12" fill="#166534" font-weight="600">🌳 Park</text>
+                        
+                        <!-- Report Markers -->
+                        <g id="reportMarkers"></g>
+                        
+                        <!-- User Location -->
+                        <g>
+                            <circle cx="180" cy="260" r="20" fill="#3B82F6" opacity="0.15">
+                                <animate attributeName="r" from="20" to="30" dur="2s" repeatCount="indefinite"/>
+                                <animate attributeName="opacity" from="0.15" to="0" dur="2s" repeatCount="indefinite"/>
+                            </circle>
+                            <circle cx="180" cy="260" r="8" fill="#3B82F6"/>
+                            <circle cx="180" cy="260" r="4" fill="#fff"/>
+                        </g>
+                    </svg>
+
+                    <!-- Marker Tooltip -->
+                    <div class="marker-tooltip" id="markerTooltip">
+                        <div class="tooltip-header">
+                            <div class="tooltip-content">
+                                <div class="tooltip-icon" id="tooltipIcon">💡</div>
+                                <div class="tooltip-text">
+                                    <h4 id="tooltipTitle">Street Light Out</h4>
+                                    <p id="tooltipLocation">📍 Main St & 5th Ave</p>
+                                </div>
+                            </div>
+                            <button class="close-btn" onclick="closeTooltip()">✕</button>
+                        </div>
+                        <div class="tooltip-status">
+                            <div class="status-indicator" id="tooltipStatusDot"></div>
+                            <span id="tooltipStatus">Pending</span>
+                            <span style="margin-left: auto; color: #94A3B8;" id="tooltipTime">2 hours ago</span>
+                        </div>
+                    </div>
+
+                    <!-- Map Legend -->
+                    <div class="map-legend">
+                        <div class="legend-title">Report Types</div>
+                        <div class="legend-items">
+                            <div class="legend-item">
+                                <div class="legend-dot" style="background: #F59E0B;"></div>
+                                <div class="legend-label">Poor Lighting</div>
+                            </div>
+                            <div class="legend-item">
+                                <div class="legend-dot" style="background: #EF4444;"></div>
+                                <div class="legend-label">Damaged Road</div>
+                            </div>
+                            <div class="legend-item">
+                                <div class="legend-dot" style="background: #DC2626;"></div>
+                                <div class="legend-label">Unsafe Area</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Quick Report Button -->
+                    <button class="quick-report-btn" onclick="openReportForm()">➕</button>
+                </div>
+            </div>
+
+            <!-- REPORT SCREEN -->
+            <div class="screen" id="reportScreen">
+                <div class="report-content">
+                    <div id="reportForm">
+                        <div class="screen-header">
+                            <h2 class="screen-title">Submit Report</h2>
+                            <button class="close-btn" style="font-size: 20px;" onclick="closeReportForm()">✕</button>
+                        </div>
+
+                        <!-- Issue Type -->
+                        <div class="form-group">
+                            <label class="form-label required">Issue Type</label>
+                            <div class="issue-grid">
+                                <div class="issue-type" data-type="lighting" onclick="selectIssue('lighting')">
+                                    <div class="issue-icon">💡</div>
+                                    <div class="issue-label">Poor Lighting</div>
+                                </div>
+                                <div class="issue-type" data-type="road" onclick="selectIssue('road')">
+                                    <div class="issue-icon">🚧</div>
+                                    <div class="issue-label">Damaged Road</div>
+                                </div>
+                                <div class="issue-type" data-type="unsafe" onclick="selectIssue('unsafe')">
+                                    <div class="issue-icon">⚠️</div>
+                                    <div class="issue-label">Unsafe Area</div>
+                                </div>
+                                <div class="issue-type" data-type="vandalism" onclick="selectIssue('vandalism')">
+                                    <div class="issue-icon">🎨</div>
+                                    <div class="issue-label">Vandalism</div>
+                                </div>
+                                <div class="issue-type" data-type="other" onclick="selectIssue('other')">
+                                    <div class="issue-icon">📝</div>
+                                    <div class="issue-label">Other Issue</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Description -->
+                        <div class="form-group">
+                            <label class="form-label required">Description</label>
+                            <textarea id="reportDescription" placeholder="Describe the issue in detail..." maxlength="500"></textarea>
+                        </div>
+
+                        <!-- Location -->
+                        <div class="form-group">
+                            <label class="form-label">Location</label>
+                            <div class="location-display">
+                                <div class="location-icon">📍</div>
+                                <div class="location-text">Downtown District</div>
+                                <div class="auto-detected">Auto-detected</div>
+                            </div>
+                        </div>
+
+                        <!-- Photo Upload -->
+                        <div class="form-group">
+                            <label class="form-label">Photo (Optional)</label>
+                            <div class="photo-upload" id="photoUpload" onclick="togglePhoto()">
+                                <div class="photo-icon">📷</div>
+                                <div class="photo-text" id="photoText">Add Photo</div>
+                            </div>
+                        </div>
+
+                        <!-- Submit Button -->
+                        <button class="btn-submit" id="submitBtn" onclick="submitReport()" disabled>
+                            <span>📤</span>
+                            <span>Submit Report</span>
+                        </button>
+                    </div>
+
+                    <!-- Success Message -->
+                    <div class="success-message" id="successMessage">
+                        <div class="success-icon">✅</div>
+                        <h3 class="success-title">Report Submitted!</h3>
+                        <p class="success-text">Authorities have been notified</p>
+                    </div>
+
+                    <!-- Reports List -->
+                    <div id="reportsList" style="display: none;">
+                        <div class="screen-header">
+                            <h2 class="screen-title">Recent Reports</h2>
+                            <button class="btn-primary" onclick="openReportForm()">
+                                <span>➕</span>
+                                <span>New Report</span>
+                            </button>
+                        </div>
+
+                        <div class="reports-list" id="reportsContainer"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- EMERGENCY SCREEN -->
+            <div class="screen" id="emergencyScreen">
+                <div class="report-content">
+                    <div id="emergencyContacts">
+                        <div class="emergency-warning">
+                            <div class="warning-header">
+                                <div class="warning-icon">🛡️</div>
+                                <h2 class="warning-title">Emergency Services</h2>
+                            </div>
+                            <p class="warning-text">
+                                In case of emergency, tap any service below to call immediately. Your location will be shared automatically.
+                            </p>
+                        </div>
+
+                        <div class="emergency-grid">
+                            <button class="emergency-btn" onclick="callEmergency('Police', '911', '🚓', '#3B82F6')">
+                                <div class="emergency-icon-box" style="background: rgba(59,130,246,0.1);">
+                                    <span>🚓</span>
+                                </div>
+                                <div class="emergency-info">
+                                    <div class="emergency-name">Police</div>
+                                    <div class="emergency-desc">Law enforcement</div>
+                                    <div class="emergency-number" style="color: #3B82F6;">911</div>
+                                </div>
+                                <div style="font-size: 20px;">📞</div>
+                            </button>
+
+                            <button class="emergency-btn" onclick="callEmergency('Ambulance', '911', '🚑', '#EF4444')">
+                                <div class="emergency-icon-box" style="background: rgba(239,68,68,0.1);">
+                                    <span>🚑</span>
+                                </div>
+                                <div class="emergency-info">
+                                    <div class="emergency-name">Ambulance</div>
+                                    <div class="emergency-desc">Medical emergency</div>
+                                    <div class="emergency-number" style="color: #EF4444;">911</div>
+                                </div>
+                                <div style="font-size: 20px;">📞</div>
+                            </button>
+
+                            <button class="emergency-btn" onclick="callEmergency('Fire Department', '911', '🚒', '#F97316')">
+                                <div class="emergency-icon-box" style="background: rgba(249,115,22,0.1);">
+                                    <span>🚒</span>
+                                </div>
+                                <div class="emergency-info">
+                                    <div class="emergency-name">Fire Department</div>
+                                    <div class="emergency-desc">Fire & rescue</div>
+                                    <div class="emergency-number" style="color: #F97316;">911</div>
+                                </div>
+                                <div style="font-size: 20px;">📞</div>
+                            </button>
+
+                            <button class="emergency-btn" onclick="callEmergency('Crisis Hotline', '988', '💙', '#8B5CF6')">
+                                <div class="emergency-icon-box" style="background: rgba(139,92,246,0.1);">
+                                    <span>💙</span>
+                                </div>
+                                <div class="emergency-info">
+                                    <div class="emergency-name">Crisis Hotline</div>
+                                    <div class="emergency-desc">Mental health support</div>
+                                    <div class="emergency-number" style="color: #8B5CF6;">988</div>
+                                </div>
+                                <div style="font-size: 20px;">📞</div>
+                            </button>
+                        </div>
+
+                        <div class="emergency-note">
+                            <strong style="color: #1E293B;">Note:</strong> When you call, your current GPS location will be automatically shared with emergency services to help them reach you faster.
+                        </div>
+                    </div>
+
+                    <!-- Calling Screen -->
+                    <div class="calling-screen" id="callingScreen">
+                        <div class="calling-icon">📞</div>
+                        <h3 class="calling-title">Calling <span id="callingService">Police</span>...</h3>
+                        <div class="calling-number" id="callingNumber" style="color: #3B82F6;">911</div>
+                        <p class="calling-desc" id="callingDesc">Law enforcement</p>
+                        <button class="btn-cancel" onclick="cancelCall()">Cancel Call</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- PROFILE SCREEN -->
+            <div class="screen" id="profileScreen">
+                <div class="report-content">
+                    <div class="profile-header">
+                        <div class="profile-avatar">👤</div>
+                        <h3 class="profile-name">Community Member</h3>
+                        <p class="profile-since">Active since Jan 2025</p>
+                    </div>
+
+                    <div class="activity-section">
+                        <h4 class="section-title">Your Activity</h4>
+                        <div class="activity-stats">
+                            <div class="stat-item">
+                                <div class="stat-left">
+                                    <div class="stat-icon">📋</div>
+                                    <div class="stat-label">Reports Submitted</div>
+                                </div>
+                                <div class="stat-value" id="userReports">0</div>
+                            </div>
+                            <div class="stat-item">
+                                <div class="stat-left">
+                                    <div class="stat-icon">✅</div>
+                                    <div class="stat-label">Issues Resolved</div>
+                                </div>
+                                <div class="stat-value">0</div>
+                            </div>
+                            <div class="stat-item">
+                                <div class="stat-left">
+                                    <div class="stat-icon">⭐</div>
+                                    <div class="stat-label">Community Impact</div>
+                                </div>
+                                <div class="stat-value">High</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="settings-list">
+                        <button class="settings-item">
+                            <div class="settings-icon">⚙️</div>
+                            <div class="settings-label">Settings</div>
+                            <div class="settings-arrow">›</div>
+                        </button>
+                        <button class="settings-item">
+                            <div class="settings-icon">🔒</div>
+                            <div class="settings-label">Privacy Policy</div>
+                            <div class="settings-arrow">›</div>
+                        </button>
+                        <button class="settings-item">
+                            <div class="settings-icon">❓</div>
+                            <div class="settings-label">Help & Support</div>
+                            <div class="settings-arrow">›</div>
+                        </button>
+                        <button class="settings-item">
+                            <div class="settings-icon">ℹ️</div>
+                            <div class="settings-label">About Bright Security</div>
+                            <div class="settings-arrow">›</div>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Bottom Navigation -->
+        <div class="bottom-nav">
+            <button class="nav-item active" onclick="switchTab('map')">
+                <div class="nav-icon-wrapper">
+                    <div class="nav-icon">📍</div>
+                </div>
+                <div class="nav-label">Map</div>
+            </button>
+            <button class="nav-item" onclick="switchTab('report')">
+                <div class="nav-icon-wrapper">
+                    <div class="nav-icon">⚠️</div>
+                </div>
+                <div class="nav-label">Report</div>
+            </button>
+            <button class="nav-item emergency" onclick="switchTab('emergency')">
+                <div class="nav-icon-wrapper">
+                    <div class="nav-icon">📞</div>
+                </div>
+                <div class="nav-label">Emergency</div>
+            </button>
+            <button class="nav-item" onclick="switchTab('profile')">
+                <div class="nav-icon-wrapper">
+                    <div class="nav-icon">👤</div>
+                </div>
+                <div class="nav-label">Profile</div>
+            </button>
+        </div>
+    </div>
+
+    <script>
+        // Sample data
+        let reports = [
+            { id: 1, type: 'lighting', icon: '💡', title: 'Street Light Out', location: 'Main St & 5th Ave', time: '2 hours ago', status: 'pending', x: 80, y: 60 },
+            { id: 2, type: 'road', icon: '🚧', title: 'Pothole on Bridge', location: 'Central Bridge', time: '5 hours ago', status: 'inProgress', x: 185, y: 135 },
+            { id: 3, type: 'unsafe', icon: '⚠️', title: 'Dark Alley Area', location: 'Park District', time: '1 day ago', status: 'resolved', x: 270, y: 220 }
+        ];
+
+        let selectedIssueType = '';
+        let hasPhoto = false;
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', function() {
+            updateTime();
+            setInterval(updateTime, 1000);
+            renderMapMarkers();
+            renderReportsList();
+            drawGrid();
+        });
+
+        function updateTime() {
+            const now = new Date();
+            const timeStr = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+            document.getElementById('statusTime').textContent = timeStr;
+        }
+
+        function drawGrid() {
+            const gridLines = document.getElementById('gridLines');
+            let html = '';
+            for (let i = 0; i < 20; i++) {
+                html += `<line x1="${i * 20}" y1="0" x2="${i * 20}" y2="520" stroke="#CBD5E1" stroke-width="0.5"/>`;
+            }
+            for (let i = 0; i < 30; i++) {
+                html += `<line x1="0" y1="${i * 20}" x2="360" y2="${i * 20}" stroke="#CBD5E1" stroke-width="0.5"/>`;
+            }
+            gridLines.innerHTML = html;
+        }
+
+        function renderMapMarkers() {
+            const container = document.getElementById('reportMarkers');
+            let html = '';
+            
+            reports.forEach(report => {
+                const color = getIssueColor(report.type);
+                html += `
+                    <g onclick="showTooltip(${report.id})" style="cursor: pointer;">
+                        <circle cx="${report.x}" cy="${report.y}" r="18" fill="${color}" opacity="0.1">
+                            <animate attributeName="r" from="18" to="28" dur="2s" repeatCount="indefinite"/>
+                            <animate attributeName="opacity" from="0.1" to="0" dur="2s" repeatCount="indefinite"/>
+                        </circle>
+                        <circle cx="${report.x}" cy="${report.y}" r="12" fill="${color}" opacity="0.3"/>
+                        <circle cx="${report.x}" cy="${report.y}" r="8" fill="${color}"/>
+                    </g>
+                `;
+            });
+            
+            container.innerHTML = html;
+        }
+
+        function getIssueColor(type) {
+            const colors = {
+                lighting: '#F59E0B',
+                road: '#EF4444',
+                unsafe: '#DC2626',
+                vandalism: '#F97316',
+                other: '#64748B'
+            };
+            return colors[type] || '#64748B';
+        }
+
+        function getStatusColor(status) {
+            const colors = {
+                pending: '#F59E0B',
+                inProgress: '#3B82F6',
+                resolved: '#10B981'
+            };
+            return colors[status] || '#64748B';
+        }
+
+        function getStatusLabel(status) {
+            const labels = {
+                pending: 'Pending',
+                inProgress: 'In Progress',
+                resolved: 'Resolved'
+            };
+            return labels[status] || 'Unknown';
+        }
+
+        function showTooltip(reportId) {
+            const report = reports.find(r => r.id === reportId);
+            if (!report) return;
+
+            document.getElementById('tooltipIcon').textContent = report.icon;
+            document.getElementById('tooltipTitle').textContent = report.title;
+            document.getElementById('tooltipLocation').textContent = '📍 ' + report.location;
+            document.getElementById('tooltipStatus').textContent = getStatusLabel(report.status);
+            document.getElementById('tooltipStatusDot').style.background = getStatusColor(report.status);
+            document.getElementById('tooltipTime').textContent = report.time;
+            
+            document.getElementById('markerTooltip').classList.add('active');
+        }
+
+        function closeTooltip() {
+            document.getElementById('markerTooltip').classList.remove('active');
+        }
+
+        function switchTab(tab) {
+            // Update nav items
+            document.querySelectorAll('.nav-item').forEach(item => {
+                item.classList.remove('active');
+            });
+            event.currentTarget.classList.add('active');
+
+            // Update screens
+            document.querySelectorAll('.screen').forEach(screen => {
+                screen.classList.remove('active');
+            });
+
+            const screens = {
+                map: 'mapScreen',
+                report: 'reportScreen',
+                emergency: 'emergencyScreen',
+                profile: 'profileScreen'
+            };
+
+            document.getElementById(screens[tab]).classList.add('active');
+
+            // Show reports list when switching to report tab
+            if (tab === 'report') {
+                document.getElementById('reportForm').style.display = 'none';
+                document.getElementById('successMessage').classList.remove('active');
+                document.getElementById('reportsList').style.display = 'block';
+                renderReportsList();
+            }
+        }
+
+        function openReportForm() {
+            switchTab('report');
+            document.getElementById('reportsList').style.display = 'none';
+            document.getElementById('reportForm').style.display = 'block';
+            document.getElementById('successMessage').classList.remove('active');
+        }
+
+        function closeReportForm() {
+            document.getElementById('reportForm').style.display = 'none';
+            document.getElementById('reportsList').style.display = 'block';
+        }
+
+        function selectIssue(type) {
+            selectedIssueType = type;
+            
+            document.querySelectorAll('.issue-type').forEach(el => {
+                el.classList.remove('selected');
+            });
+            
+            document.querySelector(`[data-type="${type}"]`).classList.add('selected');
+            
+            validateForm();
+        }
+
+        function togglePhoto() {
+            hasPhoto = !hasPhoto;
+            const upload = document.getElementById('photoUpload');
+            const text = document.getElementById('photoText');
+            
+            if (hasPhoto) {
+                upload.classList.add('has-photo');
+                text.textContent = 'Photo Added ✓';
+            } else {
+                upload.classList.remove('has-photo');
+                text.textContent = 'Add Photo';
+            }
+        }
+
+        function validateForm() {
+            const description = document.getElementById('reportDescription').value;
+            const submitBtn = document.getElementById('submitBtn');
+            
+            if (selectedIssueType && description.trim().length >= 10) {
+                submitBtn.disabled = false;
+            } else {
+                submitBtn.disabled = true;
+            }
+        }
+
+        document.getElementById('reportDescription').addEventListener('input', validateForm);
+
+        function submitReport() {
+            const description = document.getElementById('reportDescription').value;
+            
+            const issueIcons = {
+                lighting: '💡',
+                road: '🚧',
+                unsafe: '⚠️',
+                vandalism: '🎨',
+                other: '📝'
+            };
+
+            const issueLabels = {
+                lighting: 'Poor Lighting',
+                road: 'Damaged Road',
+                unsafe: 'Unsafe Area',
+                vandalism: 'Vandalism',
+                other: 'Other Issue'
+            };
+
+            const newReport = {
+                id: Date.now(),
+                type: selectedIssueType,
+                icon: issueIcons[selectedIssueType],
+                title: issueLabels[selectedIssueType],
+                location: 'Downtown District',
+                time: 'Just now',
+                status: 'pending',
+                description: description,
+                hasPhoto: hasPhoto,
+                x: 150 + Math.random() * 100,
+                y: 180 + Math.random() * 100
+            };
+
+            reports.unshift(newReport);
+            
+            document.getElementById('reportForm').style.display = 'none';
+            document.getElementById('successMessage').classList.add('active');
+            
+            renderMapMarkers();
+            updateReportCount();
+            
+            document.getElementById('userReports').textContent = reports.filter(r => r.time === 'Just now').length;
+            
+            setTimeout(() => {
+                document.getElementById('successMessage').classList.remove('active');
+                document.getElementById('reportsList').style.display = 'block';
+                renderReportsList();
+                
+                // Reset form
+                selectedIssueType = '';
+                hasPhoto = false;
+                document.getElementById('reportDescription').value = '';
+                document.querySelectorAll('.issue-type').forEach(el => el.classList.remove('selected'));
+                document.getElementById('photoUpload').classList.remove('has-photo');
+                document.getElementById('photoText').textContent = 'Add Photo';
+                document.getElementById('submitBtn').disabled = true;
+                
+                switchTab('map');
+            }, 2000);
+        }
+
+        function renderReportsList() {
+            const container = document.getElementById('reportsContainer');
+            let html = '';
+            
+            reports.forEach(report => {
+                html += `
+                    <div class="report-card">
+                        <div class="report-card-header">
+                            <div class="report-card-icon">${report.icon}</div>
+                            <div class="report-card-content">
+                                <div class="report-card-title">${report.title}</div>
+                                <div class="report-card-location">
+                                    <span>📍</span>
+                                    <span>${report.location}</span>
+                                </div>
+                            </div>
+                            <div style="color: #CBD5E1; font-size: 18px;">›</div>
+                        </div>
+                        <div class="report-card-footer">
+                            <div class="report-status-badge">
+                                <div class="status-indicator" style="background: ${getStatusColor(report.status)};"></div>
+                                <span style="color: #475569;">${getStatusLabel(report.status)}</span>
+                            </div>
+                            <div class="report-time">${report.time}</div>
+                        </div>
+                    </div>
+                `;
+            });
+            
+            container.innerHTML = html;
+        }
+
+        function updateReportCount() {
+            document.getElementById('reportCount').textContent = `${reports.length} Reports`;
+        }
+
+        function callEmergency(service, number, icon, color) {
+            document.getElementById('emergencyContacts').style.display = 'none';
+            document.getElementById('callingScreen').classList.add('active');
+            document.getElementById('callingService').textContent = service;
+            document.getElementById('callingNumber').textContent = number;
+            document.getElementById('callingNumber').style.color = color;
+            
+            const descriptions = {
+                'Police': 'Law enforcement',
+                'Ambulance': 'Medical emergency',
+                'Fire Department': 'Fire & rescue',
+                'Crisis Hotline': 'Mental health support'
+            };
+            document.getElementById('callingDesc').textContent = descriptions[service];
+            
+            setTimeout(() => {
+                alert(`Calling ${service} at ${number}\n\nYour location has been shared automatically.`);
+                cancelCall();
+            }, 3000);
+        }
+
+        function cancelCall() {
+            document.getElementById('callingScreen').classList.remove('active');
+            document.getElementById('emergencyContacts').style.display = 'block';
+        }
+    </script>
+</body>
+</html>
+
